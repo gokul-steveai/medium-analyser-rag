@@ -3,26 +3,21 @@ from typing import Any, Dict, List
 
 from dotenv import load_dotenv
 from langchain.agents import create_agent
-from langchain.chat_models import init_chat_model
 from langchain.tools import tool
+from langchain_core.documents import Document
 from langchain_core.messages import ToolMessage
 from langchain_groq import ChatGroq
 from langchain_ollama import OllamaEmbeddings
 from langchain_pinecone import PineconeVectorStore
-from langchain_core.documents import Document
+
+from config import config
 
 load_dotenv()
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME")
-MODEL_NAME = os.getenv("MODEL_NAME")
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "qwen3-embedding:0.6b")
-
-embeddings = OllamaEmbeddings(model=EMBEDDING_MODEL)
+embeddings = OllamaEmbeddings(model=config.embedding_model)
 vector_store = PineconeVectorStore(
-    pinecone_api_key=PINECONE_API_KEY,
-    index_name=PINECONE_INDEX_NAME,
+    pinecone_api_key=config.pinecone_api_key,
+    index_name=config.pinecone_index_name,
     embedding=embeddings,
 )
 
@@ -62,7 +57,7 @@ def run_llm(query: str) -> Dict[str, Any]:
     )
 
     agent = create_agent(
-        model=ChatGroq(model=MODEL_NAME, api_key=GROQ_API_KEY),
+        model=ChatGroq(model=config.model_name, api_key=config.groq_api_key),
         tools=[retrieve_content],
         system_prompt=system_prompt,
     )
@@ -86,13 +81,10 @@ def run_llm(query: str) -> Dict[str, Any]:
         if isinstance(message, ToolMessage) and hasattr(message, "artifact"):
             if message.artifact and isinstance(message.artifact, list):
                 context_docs.append(message.artifact)
-            context_docs.append(message.content)
-        elif isinstance(message, dict) and message.get("role") == "tool":
-            context_docs.append(message.get("content", ""))
 
     return {"answer": answer, "context": context_docs}
 
 
 if __name__ == "__main__":
-    response = run_llm("What is difference between LangChain and LangSmith?")
+    response = run_llm("Why should I use LangChain?")
     print(response.get("answer", "No answer generated."))

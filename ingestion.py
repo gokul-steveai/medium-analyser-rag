@@ -10,8 +10,10 @@ from dotenv import load_dotenv
 from langchain_core.documents import Document
 from langchain_ollama import OllamaEmbeddings
 from langchain_pinecone import PineconeVectorStore
-from langchain_tavily import TavilyCrawl, TavilyExtract, TavilyMap
+from langchain_tavily import TavilyExtract, TavilyMap
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+from config import config
 from logger import logging
 
 logger = logging.getLogger("RAG_Pipeline")
@@ -28,12 +30,14 @@ os.environ["SSL_CERT_DIR"] = certifi.where()
 
 @dataclass(frozen=True)
 class PipelineConfig:
-    pinecone_api_key: str = os.getenv("PINECONE_API_KEY", "")
-    pinecone_index_name: str = os.getenv("PINECONE_INDEX_NAME", "")
-    embedding_model: str = "qwen3-embedding:0.6b"
-    target_url: str = "https://python.langchain.com"
-    crawl_chunk_size: int = 10
-    index_batch_size: int = 40  # Slightly smaller batches to ease Ollama load
+    pinecone_api_key: str = config.pinecone_api_key
+    pinecone_index_name: str = config.pinecone_index_name
+    embedding_model: str = config.embedding_model
+    target_url: str = config.target_url or "https://python.langchain.com"
+    crawl_chunk_size: int = config.crawl_chunk_size or 10
+    index_batch_size: int = (
+        config.index_batch_size or 40
+    )  # Slightly smaller batches to ease Ollama load
 
     def validate(self):
         if not self.pinecone_api_key:
